@@ -1,8 +1,12 @@
+// файл: back/modules/sportcomplex/service/sportscomplex-service.js
+
 const sportsComplexRepository = require("../repository/sportscomplex-repository");
 const logRepository = require("../../log/repository/log-repository");
 const logger = require("../../../utils/logger");
-const { paginate, paginationData } = require("../../../helpers/paginate");
+const { paginate, paginationData } = require("../../../utils/function");
 const { allowedRequisitesFilterFields, allowedServicesFilterFields } = require("../../../utils/constans");
+const { createRequisiteWord } = require("../../../utils/generateDocx");
+const { createPDF } = require("../../../utils/generatePdf"); // Цей модуль потрібно створити
 
 class SportsComplexService {
     async findRequisitesByFilter(request) {
@@ -69,6 +73,22 @@ class SportsComplexService {
     async generateWordById(id) {
         try {
             const data = await sportsComplexRepository.getRequisite(id);
+            
+            // Логування операції
+            await logRepository.createLog({
+                row_pk_id: id,
+                uid: request?.user?.id,
+                action: 'GENERATE_DOC',
+                client_addr: request?.ip,
+                application_name: 'Генерування документа реквізитів',
+                action_stamp_tx: new Date(),
+                action_stamp_stm: new Date(),
+                action_stamp_clk: new Date(),
+                schema_name: 'public',
+                table_name: 'requisites',
+                oid: '16504',
+            });
+            
             return await createRequisiteWord(data);
         } catch (error) {
             logger.error("[SportsComplexService][generateWordById]", error);
@@ -81,6 +101,252 @@ class SportsComplexService {
             return await sportsComplexRepository.getRequisite(id);
         } catch (error) {
             logger.error("[SportsComplexService][printById]", error);
+            throw error;
+        }
+    }
+
+    // Нові методи для функціоналу рахунків
+
+    async createPoolService(request) {
+        try {
+            const { name, unit, price, service_group_id } = request.body;
+            const result = await sportsComplexRepository.createPoolService({
+                name,
+                unit,
+                price,
+                service_group_id
+            });
+            
+            // Логування операції
+            await logRepository.createLog({
+                row_pk_id: result.id,
+                uid: request?.user?.id,
+                action: 'INSERT',
+                client_addr: request?.ip,
+                application_name: 'Створення послуги басейну',
+                action_stamp_tx: new Date(),
+                action_stamp_stm: new Date(),
+                action_stamp_clk: new Date(),
+                schema_name: 'public',
+                table_name: 'services',
+                oid: '16505',
+            });
+            
+            return { success: true, message: 'Послугу успішно створено' };
+        } catch (error) {
+            logger.error("[SportsComplexService][createPoolService]", error);
+            throw error;
+        }
+    }
+
+    async createRequisite(request) {
+        try {
+            const { kved, iban, edrpou, service_group_id } = request.body;
+            const result = await sportsComplexRepository.createRequisite({
+                kved,
+                iban,
+                edrpou,
+                service_group_id
+            });
+            
+            // Логування операції
+            await logRepository.createLog({
+                row_pk_id: result.id,
+                uid: request?.user?.id,
+                action: 'INSERT',
+                client_addr: request?.ip,
+                application_name: 'Створення реквізитів',
+                action_stamp_tx: new Date(),
+                action_stamp_stm: new Date(),
+                action_stamp_clk: new Date(),
+                schema_name: 'public',
+                table_name: 'requisites',
+                oid: '16504',
+            });
+            
+            return { success: true, message: 'Реквізити успішно створено' };
+        } catch (error) {
+            logger.error("[SportsComplexService][createRequisite]", error);
+            throw error;
+        }
+    }
+
+    async getServiceGroups() {
+        try {
+            return await sportsComplexRepository.getServiceGroups();
+        } catch (error) {
+            logger.error("[SportsComplexService][getServiceGroups]", error);
+            throw error;
+        }
+    }
+
+    async getServicesByGroup(id) {
+        try {
+            return await sportsComplexRepository.getServicesByGroup(id);
+        } catch (error) {
+            logger.error("[SportsComplexService][getServicesByGroup]", error);
+            throw error;
+        }
+    }
+
+    async createBill(request) {
+        try {
+            const { account_number, payer, service_id, quantity, status } = request.body;
+            
+            const result = await sportsComplexRepository.createBill({
+                account_number,
+                payer,
+                service_id,
+                quantity,
+                status
+            });
+            
+            // Логування операції
+            await logRepository.createLog({
+                row_pk_id: result.id,
+                uid: request?.user?.id,
+                action: 'INSERT',
+                client_addr: request?.ip,
+                application_name: 'Створення рахунку',
+                action_stamp_tx: new Date(),
+                action_stamp_stm: new Date(),
+                action_stamp_clk: new Date(),
+                schema_name: 'public',
+                table_name: 'payments',
+                oid: '16506',
+            });
+            
+            return { 
+                success: true, 
+                message: 'Рахунок успішно створено',
+                id: result.id
+            };
+        } catch (error) {
+            logger.error("[SportsComplexService][createBill]", error);
+            throw error;
+        }
+    }
+
+    async findBillsByFilter(request) {
+        try {
+            const { page = 1, limit = 16, ...filters } = request.body;
+            const { offset } = paginate(page, limit);
+            
+            const data = await sportsComplexRepository.findBillsByFilter(limit, offset, filters);
+            
+            // Логування операції пошуку, якщо є фільтри
+            if (Object.keys(filters).length > 0) {
+                await logRepository.createLog({
+                    row_pk_id: null,
+                    uid: request?.user?.id,
+                    action: 'SEARCH',
+                    client_addr: request?.ip,
+                    application_name: 'Пошук рахунків',
+                    action_stamp_tx: new Date(),
+                    action_stamp_stm: new Date(),
+                    action_stamp_clk: new Date(),
+                    schema_name: 'public',
+                    table_name: 'payments',
+                    oid: '16506',
+                });
+            }
+            
+            return paginationData(data[0], page, limit, data[1]);
+        } catch (error) {
+            logger.error("[SportsComplexService][findBillsByFilter]", error);
+            throw error;
+        }
+    }
+
+    async getBillById(id) {
+        try {
+            return await sportsComplexRepository.getBillById(id);
+        } catch (error) {
+            logger.error("[SportsComplexService][getBillById]", error);
+            throw error;
+        }
+    }
+
+    async updateBillStatus(request) {
+        try {
+            const { id } = request.params;
+            const { status } = request.body;
+            
+            const result = await sportsComplexRepository.updateBillStatus(id, status);
+            
+            if (!result) {
+                throw new Error('Рахунок не знайдено');
+            }
+            
+            // Логування операції
+            await logRepository.createLog({
+                row_pk_id: id,
+                uid: request?.user?.id,
+                action: 'UPDATE',
+                client_addr: request?.ip,
+                application_name: 'Зміна статусу рахунку',
+                action_stamp_tx: new Date(),
+                action_stamp_stm: new Date(),
+                action_stamp_clk: new Date(),
+                schema_name: 'public',
+                table_name: 'payments',
+                oid: '16506',
+            });
+            
+            return { success: true, message: `Статус рахунку успішно змінено на "${status}"` };
+        } catch (error) {
+            logger.error("[SportsComplexService][updateBillStatus]", error);
+            throw error;
+        }
+    }
+
+    async generateBillReceipt(request, reply) {
+        try {
+            const { id } = request.params;
+            
+            // Отримуємо дані рахунку
+            const bill = await sportsComplexRepository.getBillById(id);
+            
+            if (!bill) {
+                throw new Error('Рахунок не знайдено');
+            }
+            
+            // Перевіряємо статус рахунку
+            if (bill.status !== 'Оплачено') {
+                throw new Error('Неможливо згенерувати квитанцію для неоплаченого рахунку');
+            }
+            
+            // Генеруємо PDF квитанцію
+            const pdfBuffer = await createPDF({
+                title: 'Квитанція про оплату',
+                accountNumber: bill.account_number,
+                payer: bill.payer,
+                serviceGroup: bill.service_group,
+                serviceName: bill.service_name,
+                unit: bill.unit,
+                quantity: bill.quantity,
+                totalPrice: bill.total_price,
+                date: new Date(bill.updated_at).toLocaleDateString('uk-UA')
+            });
+            
+            // Логування операції
+            await logRepository.createLog({
+                row_pk_id: id,
+                uid: request?.user?.id,
+                action: 'GENERATE_DOC',
+                client_addr: request?.ip,
+                application_name: 'Генерування квитанції',
+                action_stamp_tx: new Date(),
+                action_stamp_stm: new Date(),
+                action_stamp_clk: new Date(),
+                schema_name: 'public',
+                table_name: 'payments',
+                oid: '16506',
+            });
+            
+            return pdfBuffer;
+        } catch (error) {
+            logger.error("[SportsComplexService][generateBillReceipt]", error);
             throw error;
         }
     }

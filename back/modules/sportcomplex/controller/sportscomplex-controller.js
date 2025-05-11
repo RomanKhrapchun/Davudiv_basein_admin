@@ -1,3 +1,5 @@
+// файл: back/modules/sportcomplex/controller/sportscomplex-controller.js
+
 const sportsComplexService = require("../service/sportscomplex-service");
 const logger = require("../../../utils/logger");
 
@@ -51,6 +53,100 @@ class SportsComplexController {
         } catch (error) {
             logger.error("[printById]", error);
             return reply.code(500).send({ error: "Не вдалося отримати дані для друку." });
+        }
+    }
+
+    // Нові методи для функціоналу рахунків
+
+    async createPoolService(request, reply) {
+        try {
+            const result = await sportsComplexService.createPoolService(request);
+            return reply.send(result);
+        } catch (error) {
+            logger.error("[createPoolService]", error);
+            return reply.code(500).send({ error: "Не вдалося створити послугу." });
+        }
+    }
+
+    async createRequisite(request, reply) {
+        try {
+            const result = await sportsComplexService.createRequisite(request);
+            return reply.send(result);
+        } catch (error) {
+            logger.error("[createRequisite]", error);
+            return reply.code(500).send({ error: "Не вдалося створити реквізити." });
+        }
+    }
+
+    async getServiceGroups(request, reply) {
+        try {
+            const data = await sportsComplexService.getServiceGroups();
+            return reply.send(data);
+        } catch (error) {
+            logger.error("[getServiceGroups]", error);
+            return reply.code(500).send({ error: "Не вдалося отримати групи послуг." });
+        }
+    }
+
+    async getServicesByGroup(request, reply) {
+        try {
+            const data = await sportsComplexService.getServicesByGroup(request.params.id);
+            return reply.send(data);
+        } catch (error) {
+            logger.error("[getServicesByGroup]", error);
+            return reply.code(500).send({ error: "Не вдалося отримати послуги для групи." });
+        }
+    }
+
+    async createBill(request, reply) {
+        try {
+            const result = await sportsComplexService.createBill(request);
+            return reply.send(result);
+        } catch (error) {
+            logger.error("[createBill]", error);
+            return reply.code(500).send({ error: "Не вдалося створити рахунок." });
+        }
+    }
+
+    async findBillsByFilter(request, reply) {
+        try {
+            const data = await sportsComplexService.findBillsByFilter(request);
+            return reply.send(data);
+        } catch (error) {
+            logger.error("[findBillsByFilter]", error);
+            return reply.code(500).send({ error: "Не вдалося застосувати фільтр до рахунків." });
+        }
+    }
+
+    async getBillById(request, reply) {
+        try {
+            const data = await sportsComplexService.getBillById(request.params.id);
+            return reply.send(data);
+        } catch (error) {
+            logger.error("[getBillById]", error);
+            return reply.code(500).send({ error: "Не вдалося отримати рахунок." });
+        }
+    }
+
+    async updateBillStatus(request, reply) {
+        try {
+            const result = await sportsComplexService.updateBillStatus(request);
+            return reply.send(result);
+        } catch (error) {
+            logger.error("[updateBillStatus]", error);
+            return reply.code(500).send({ error: "Не вдалося змінити статус рахунку." });
+        }
+    }
+
+    async generateBillReceipt(request, reply) {
+        try {
+            const pdfBuffer = await sportsComplexService.generateBillReceipt(request, reply);
+            reply.header("Content-Disposition", `attachment; filename=receipt-${request.params.id}.pdf`);
+            reply.type("application/pdf");
+            return reply.send(pdfBuffer);
+        } catch (error) {
+            logger.error("[generateBillReceipt]", error);
+            return reply.code(500).send({ error: "Помилка генерації квитанції." });
         }
     }
 }

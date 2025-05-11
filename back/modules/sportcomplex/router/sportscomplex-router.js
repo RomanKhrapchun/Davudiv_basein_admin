@@ -15,6 +15,14 @@ async function sportsComplexRoutes(fastify, options) {
         handler: sportsComplexController.findPoolServicesByFilter
     });
 
+    fastify.post("/sportscomplex/services", {
+        handler: sportsComplexController.createPoolService
+    });
+
+    fastify.post("/sportscomplex/requisites", {
+        handler: sportsComplexController.createRequisite
+    });
+
     fastify.get("/sportscomplex/info/:id", sportsComplexController.getById);
     fastify.get("/sportscomplex/generate/:id", sportsComplexController.generateWordById);
     fastify.get("/sportscomplex/print/:id", sportsComplexController.printById);

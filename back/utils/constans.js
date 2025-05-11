@@ -26,6 +26,9 @@ const allowUserProfileUpdateFields = ['first_name', 'last_name', 'middle_name', 
 const allowRoleUpdateFields = ['access_group_name', 'info', 'enabled', 'permission']
 const allowBlackListUpdate = ['ip', 'details', 'agent']
 const allowedDetailedLogFields = ['action_stamp_tx', 'uid']
+const allowedRequisitesFilterFields = ['kved', 'iban', 'edrpou'];
+const allowedServicesFilterFields = ['name', 'unit'];
+const allowedBillsFilterFields = ['account_number', 'payer', 'service_name', 'status'];
 //const allowedDetailedLogFields = ['year', 'month']
 const itemsPerPage = [16, 32, 48];
 
@@ -96,6 +99,9 @@ module.exports = {
     allowedModuleTableFilterFields,
     allowedRegistryTableFilterFields,
     allowedDetailedLogFields,
+    allowedRequisitesFilterFields,
+    allowedServicesFilterFields,
+    allowedBillsFilterFields,
     itemsPerPage,
     phoneReg,
     passwordReg,
