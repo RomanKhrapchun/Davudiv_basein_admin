@@ -4,9 +4,9 @@ const sportsComplexRepository = require("../repository/sportscomplex-repository"
 const logRepository = require("../../log/repository/log-repository");
 const logger = require("../../../utils/logger");
 const { paginate, paginationData } = require("../../../utils/function");
-const { allowedRequisitesFilterFields, allowedServicesFilterFields } = require("../../../utils/constans");
+const { allowedRequisitesFilterFields, allowedServicesFilterFields, allowedBillsFilterFields, displayRequisitesFilterFields, displayServicesFilterFields, displayBillsFilterFields} = require("../../../utils/constans");
 const { createRequisiteWord } = require("../../../utils/generateDocx");
-const { createPDF } = require("../../../utils/generatePdf"); // Цей модуль потрібно створити
+const { buildWhereCondition } = require("../../../utils/function");
 
 class SportsComplexService {
     async findRequisitesByFilter(request) {
@@ -14,7 +14,7 @@ class SportsComplexService {
         const { offset } = paginate(page, limit);
         const allowedFields = allowedRequisitesFilterFields.filter(el => whereConditions.hasOwnProperty(el)).reduce((acc, key) => ({ ...acc, [key]: whereConditions[key] }), {});
 
-        const data = await sportsComplexRepository.findRequisitesByFilter(limit, offset, whereConditions, allowedFields);
+        const data = await sportsComplexRepository.findRequisitesByFilter(limit, offset, displayRequisitesFilterFields, allowedFields);
 
         if (Object.keys(whereConditions).length > 0) {
             await logRepository.createLog({
@@ -40,7 +40,7 @@ class SportsComplexService {
         const { offset } = paginate(page, limit);
         const allowedFields = allowedServicesFilterFields.filter(el => whereConditions.hasOwnProperty(el)).reduce((acc, key) => ({ ...acc, [key]: whereConditions[key] }), {});
 
-        const data = await sportsComplexRepository.findPoolServicesByFilter(limit, offset, whereConditions, allowedFields);
+        const data = await sportsComplexRepository.findPoolServicesByFilter(limit, offset, displayServicesFilterFields, allowedFields);
 
         if (Object.keys(whereConditions).length > 0) {
             await logRepository.createLog({
@@ -229,10 +229,12 @@ class SportsComplexService {
 
     async findBillsByFilter(request) {
         try {
-            const { page = 1, limit = 16, ...filters } = request.body;
+            const { page = 1, limit = 16, ...whereConditions} = request.body;
             const { offset } = paginate(page, limit);
             
-            const data = await sportsComplexRepository.findBillsByFilter(limit, offset, filters);
+            const allowedFields = allowedBillsFilterFields.filter(el => whereConditions.hasOwnProperty(el)).reduce((acc, key) => ({ ...acc, [key]: whereConditions[key] }), {});
+
+            const data = await sportsComplexRepository.findRequisitesByFilter(limit, offset, displayBillsFilterFields, allowedFields);
             
             // Логування операції пошуку, якщо є фільтри
             if (Object.keys(filters).length > 0) {

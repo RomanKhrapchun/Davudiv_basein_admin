@@ -21,9 +21,9 @@ const printIcon = generateIcon(iconMap.print)
 
 const PrintKindergardenCard = () => {
     const ref = useRef(null)
-    const {debtId} = useParams()
+    const {id} = useParams()
     const navigate = useNavigate()
-    const {error, status, data} = useFetch(`api/debtor/print/${debtId}`)
+    const {error, status, data} = useFetch(`api/debtor/print/${id}`)
     const handlePrint = () => {
         if(ref.current) {
             ref.current.style.display = 'none';

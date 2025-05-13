@@ -79,7 +79,7 @@ fastify.register(logRoutes, { prefix: "/api/log" });
 fastify.register(moduleRoutes, { prefix: "/api/module" });
 fastify.register(uploadFiles, { prefix: "/api/file" });
 fastify.register(debtorRouter, { prefix: "/api/debtor" });
-fastify.register(sportsComplexRouter, { prefix: '/api/sportscomplex' });
+fastify.register(sportsComplexRouter, { prefix: "/api/sportscomplex" });
 
 fastify.addHook("onSend", async (request, reply) => {
     if (request?.cookies?.['session'] && !request?.url?.includes('auth')) {

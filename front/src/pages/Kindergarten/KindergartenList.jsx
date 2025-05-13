@@ -110,7 +110,21 @@ import React, {
               <Button
                 title="Друк"
                 icon={editIcon}
-                onClick={() => navigate(`/kindergarten/${id}/print`)}
+                onClick={() => {
+                // Перевірка, чи id є числом
+                const numericId = !isNaN(Number(id)) ? Number(id).toString() : null;
+                if (numericId) {
+                  navigate(`/kindergarten/${numericId}/print`);
+                } else {
+                  // Обробка помилки, наприклад, показ сповіщення
+                  notification({
+                    type: 'warning',
+                    title: 'Помилка',
+                    message: 'Неправильний ID запису',
+                    placement: 'top',
+                  });
+                }
+              }}
               />
             </div>
           ),
@@ -349,10 +363,10 @@ import React, {
                   <div className="table-filter__item">
                     <Input
                       icon={searchIcon}
-                      name="full_name"
+                      name="child_name"
                       type="text"
                       placeholder="Введіть ПІБ"
-                      value={stateKD.selectData.full_name || ''}
+                      value={stateKD.selectData.child_name || ''}
                       onChange={onHandleChange}
                     />
                   </div>
@@ -360,10 +374,10 @@ import React, {
                   <div className="table-filter__item">
                     <Input
                       icon={searchIcon}
-                      name="group_name"
+                      name="group_number"
                       type="text"
                       placeholder="Група садочку"
-                      value={stateKD.selectData.group_name || ''}
+                      value={stateKD.selectData.group_number || ''}
                       onChange={onHandleChange}
                     />
                   </div>

@@ -80,10 +80,10 @@ const Bills = () => {
     });
 
     // Завантаження даних рахунків
-    const { error, status, data, retryFetch } = useFetch('/api/sportscomplex/bills', {
+    const {error, status, data, retryFetch} = useFetch('api/sportscomplex/bills/filter', {
         method: 'post',
         data: state.sendData
-    });
+    }) 
     
     // Завантаження груп послуг при відкритті модального вікна
     useEffect(() => {
@@ -95,14 +95,14 @@ const Bills = () => {
     // Ефект для оновлення даних при зміні параметрів пошуку
     useEffect(() => {
         if (isFirstRun.current) {
-            isFirstRun.current = false;
+            isFirstRun.current = false
             return;
         }
-        retryFetch('/api/sportscomplex/bills', {
+        retryFetch('api/sportscomplex/bills/filter', {
             method: 'post',
             data: state.sendData,
-        });
-    }, [state.sendData, retryFetch]);
+        })
+    }, [state.sendData, retryFetch])
     
     // Завантаження груп послуг
     const loadServiceGroups = async () => {
@@ -158,7 +158,6 @@ const Bills = () => {
         }
     };
 
-    // Визначення стартового та кінцевого запису для пагінації
     const startRecord = ((state.sendData.page || 1) - 1) * state.sendData.limit + 1;
     const endRecord = Math.min(startRecord + state.sendData.limit - 1, data?.totalItems || 1);
 

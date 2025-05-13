@@ -9,6 +9,9 @@ const displayModuleFields = ['module_id', 'module', 'module_name', 'install_vers
 const displayRegistryFields = ['doct_id', 'title', 'enabled', 'module', 'info', 'name', 'ord']
 const displayDebtorFields = ['id', 'name', 'date', 'non_residential_debt', 'residential_debt', 'land_debt', 'orenda_debt', 'identification', 'mpz']
 const displayKindergardenFields = ['id', 'child_name', 'date', 'group_number','kindergarden_name','debt_amount']
+const displayRequisitesFilterFields = ['id', 'service_group_id', 'kved', 'iban', 'edrpou'];
+const displayServicesFilterFields = ['id', 'service_group_id', 'name', 'unit', 'price'];
+const displayBillsFilterFields = ['id', 'account_number', 'payer', 'service_id', 'quantity', 'total_price', 'status'];
 
 const allowedUserTableFilterFields = ['is_active', 'access_group']
 const allowedLogTableFilterFields = ['action', 'uid', 'action_stamp_tx', 'access_group_id']
@@ -26,8 +29,8 @@ const allowUserProfileUpdateFields = ['first_name', 'last_name', 'middle_name', 
 const allowRoleUpdateFields = ['access_group_name', 'info', 'enabled', 'permission']
 const allowBlackListUpdate = ['ip', 'details', 'agent']
 const allowedDetailedLogFields = ['action_stamp_tx', 'uid']
-const allowedRequisitesFilterFields = ['kved', 'iban', 'edrpou'];
-const allowedServicesFilterFields = ['name', 'unit'];
+const allowedRequisitesFilterFields = ['name', 'kved', 'iban', 'edrpou'];
+const allowedServicesFilterFields = ['name', 'unit', 'price'];
 const allowedBillsFilterFields = ['account_number', 'payer', 'service_name', 'status'];
 //const allowedDetailedLogFields = ['year', 'month']
 const itemsPerPage = [16, 32, 48];
@@ -85,6 +88,9 @@ module.exports = {
     displayDebtorFields,
     displayKindergardenFields,
     displayFieldsLogs,
+    displayRequisitesFilterFields,
+    displayServicesFilterFields,
+    displayBillsFilterFields,
     allowedUserTableFilterFields,
     allowUserProfileUpdateFields,
     allowRoleUpdateFields,

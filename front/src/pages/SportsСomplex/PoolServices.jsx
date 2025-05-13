@@ -111,13 +111,18 @@ const PoolServices = () => {
         }
     ], [navigate]);                
 
-    const tableData = useMemo(() => (data?.items || []).map(el => ({
-        key: el.id,
-        id: el.id,
-        serviceName: el.serviceName,
-        unit: el.unit,
-        price: el.price,
-    })), [data]);        
+    const tableData = useMemo(() => {
+        if (data?.items?.length) {
+            return data?.items?.map(el => ({
+                key: el.id,
+                id: el.id,
+                serviceName: el.name,
+                unit: el.unit,
+                price: el.price,
+            }))                
+        }
+        return []
+    }, [data])     
 
     const itemMenu = [16, 32, 48].map(size => ({
         label: `${size}`,

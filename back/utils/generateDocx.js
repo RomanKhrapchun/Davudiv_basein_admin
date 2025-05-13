@@ -49,19 +49,19 @@ const createRequisiteWord = async (body, requisite) => {
         const docBuffer = await fs.readFile("./files/doc1.docx");
         const children = debts.map((_, index) => [
             new Paragraph({
-                alignment: AlignmentType.LEFT, // Встановлює вирівнювання по лівому краю
+                alignment: AlignmentType.LEFT,
                 children: [
                     new TextRun({ text: `{{debtText${index}}}`, font: "Times New Roman", size: 26 }),
                 ],
             }),
             new Paragraph({
-                alignment: AlignmentType.CENTER, // Встановлює вирівнювання по центру
+                alignment: AlignmentType.CENTER,
                 children: [
                     new TextRun({ text: `{{requisiteText${index}}}`, font: "Times New Roman", size: 26 }),
                 ],
             }),
             new Paragraph({
-                alignment: AlignmentType.LEFT, // Встановлює вирівнювання по лівому
+                alignment: AlignmentType.LEFT,
                 children: [
                     new TextRun({ text: `{{table${index}}}`, font: "Times New Roman", size: 26 }),
                 ],
@@ -179,8 +179,8 @@ const createRequisiteWord = async (body, requisite) => {
                             new ImageRun({
                                 data: await fs.readFile("./files/qr-code.png"),
                                 transformation: {
-                                    width: 146, // Ширина зображення (пікселі)
-                                    height: 146, // Висота зображення (пікселі)
+                                    width: 146,
+                                    height: 146,
                                 },
                             }),
                         ],
@@ -190,14 +190,12 @@ const createRequisiteWord = async (body, requisite) => {
             },
         };
 
-
-        // Додаємо патчі для кожного об'єкта debt
         debts.forEach((debt, index) => {
             patches[`debtText${index}`] = {
                 type: PatchType.PARAGRAPH,
                 children: [
                     new TextRun({
-                        text: `${debt[0].debtText}`, // Використовуємо текст із об'єкта `debt`
+                        text: `${debt[0].debtText}`,
                         font: "Times New Roman",
                         size: 26
                     })
@@ -208,7 +206,7 @@ const createRequisiteWord = async (body, requisite) => {
                 type: PatchType.PARAGRAPH,
                 children: [
                     new TextRun({
-                        text: `${debt[0].requisiteText}`, // Використовуємо текст із об'єкта `debt`
+                        text: `${debt[0].requisiteText}`,
                         font: "Times New Roman",
                         bold: true,
                         size: 26
