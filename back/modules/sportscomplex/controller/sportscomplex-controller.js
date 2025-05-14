@@ -90,15 +90,15 @@ class SportsComplexController {
 
     async getServicesByGroup(request, reply) {
         try {
+            console.log("getServicesByGroup викликано з ID:", request.params.id);
             const data = await sportsComplexService.getServicesByGroup(request.params.id);
+            console.log("Дані для відповіді:", data);
             return reply.send(data);
         } catch (error) {
-            logger.error("[getServicesByGroup]", error);
-            // Повертаємо детальніше повідомлення про помилку для діагностики
+            console.error("Помилка getServicesByGroup:", error);
             return reply.code(500).send({ 
-                error: "Не вдалося отримати послуги для групи.", 
-                details: error.message,
-                stack: error.stack 
+                error: "Не вдалося отримати послуги для групи.",
+                details: error.message
             });
         }
     }

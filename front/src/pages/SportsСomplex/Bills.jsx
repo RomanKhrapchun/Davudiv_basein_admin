@@ -133,38 +133,29 @@ const Bills = () => {
     // Завантаження послуг для вибраної групи
     const loadServicesForGroup = async (groupId) => {
         try {
-            console.log(`Loading services for group ID: ${groupId}`);
             const response = await fetchFunction(`/api/sportscomplex/services-by-group/${groupId}`, {
                 method: 'get'
             });
             
-            console.log(`Services response:`, response);
-            
             if (response?.data) {
+                // Переконайтеся, що кожен об'єкт має правильний формат { value, label }
+                const formattedServices = response.data.map(service => ({
+                    value: service.id,         // числовий ID
+                    label: service.name,       // текстова мітка для відображення
+                    unit: service.unit,        // додаткові дані
+                    price: service.price       // додаткові дані
+                }));
+                
                 setCreateModalState(prev => ({
                     ...prev,
-                    services: response.data.map(service => ({
-                        value: service.id,
-                        label: service.name,
-                        unit: service.unit,
-                        price: service.price
-                    }))
+                    services: formattedServices
                 }));
-            } else {
-                console.error("No data in services response");
-                notification({
-                    type: 'warning',
-                    title: "Помилка",
-                    message: "Отримано порожню відповідь при завантаженні послуг",
-                    placement: 'top',
-                });
             }
         } catch (error) {
-            console.error("Error loading services:", error);
             notification({
                 type: 'warning',
                 title: "Помилка",
-                message: `Не вдалося завантажити послуги: ${error.message}`,
+                message: "Не вдалося завантажити послуги",
                 placement: 'top',
             });
         }
@@ -339,6 +330,7 @@ const Bills = () => {
         });
     };
     
+    /*
     // Функція для обробки вибору групи послуг
     const handleServiceGroupChange = (value, option) => {
         setCreateModalState(prev => ({
@@ -376,7 +368,7 @@ const Bills = () => {
                 }
             }));
         }
-    };
+    };*/
 
     // Функції для фільтрів
     const resetFilters = () => {
@@ -775,7 +767,7 @@ const Bills = () => {
                                     placeholder="Введіть ПІБ платника"
                                 />
                             </FormItem>
-                            
+
                             <FormItem 
                                 label="Група послуг" 
                                 required 
@@ -784,11 +776,33 @@ const Bills = () => {
                                 <Select
                                     placeholder="Виберіть групу послуг"
                                     value={createModalState.formData.service_group_id}
-                                    onChange={handleServiceGroupChange}
+                                    onChange={(value) => {
+                                        console.log("Вибрана група:", value);
+                                        
+                                        setCreateModalState(prev => ({
+                                            ...prev,
+                                            formData: {
+                                                ...prev.formData,
+                                                service_group_id: value,
+                                                service_id: '',
+                                                service_name: '',
+                                                unit: '',
+                                                price: 0,
+                                                total_price: 0
+                                            }
+                                        }));
+                                        
+                                        if (value) {
+                                            loadServicesForGroup(value);
+                                        }
+                                    }}
                                     options={createModalState.serviceGroups}
+                                    allowClear={true}
+                                    showSearch={true}
+                                    ptionFilterProp="label"
                                 />
                             </FormItem>
-                            
+
                             <FormItem 
                                 label="Назва послуги" 
                                 required 
@@ -797,9 +811,38 @@ const Bills = () => {
                                 <Select
                                     placeholder="Виберіть послугу"
                                     value={createModalState.formData.service_id}
-                                    onChange={handleServiceChange}
+                                    // Обробник подій приймає тільки значення
+                                    onChange={(value) => {
+                                        console.log("Вибрана послуга:", value);
+                                        
+                                        setCreateModalState(prev => ({
+                                            ...prev,
+                                            formData: {
+                                                ...prev.formData,
+                                                service_id: value
+                                            }
+                                        }));
+                                        
+                                        if (value) {
+                                            const selectedService = createModalState.services.find(s => s.value === value);
+                                            if (selectedService) {
+                                                const quantity = createModalState.formData.quantity || 1;
+                                                
+                                                setCreateModalState(prev => ({
+                                                    ...prev,
+                                                    formData: {
+                                                        ...prev.formData,
+                                                        service_name: selectedService.label,
+                                                        unit: selectedService.unit,
+                                                        price: selectedService.price,
+                                                        total_price: selectedService.price * quantity
+                                                    }
+                                                }));
+                                            }
+                                        }
+                                    }}
                                     options={createModalState.services}
-                                    disabled={!createModalState.formData.service_group_id} // Неактивно, поки не вибрана група
+                                    disabled={!createModalState.formData.service_group_id}
                                 />
                             </FormItem>
                             

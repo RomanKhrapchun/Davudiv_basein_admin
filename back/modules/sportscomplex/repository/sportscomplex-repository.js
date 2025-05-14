@@ -192,14 +192,33 @@ class SportsComplexRepository {
 
     async createBill(data) {
         try {
+            // Додамо більше логування і перевірок
+            console.log("createBill: Отримані дані:", data);
+            console.log("createBill: Тип service_id:", typeof data.service_id);
+            
+            // Перетворюємо service_id на число, якщо це рядок
+            const serviceId = typeof data.service_id === 'string' 
+                ? parseInt(data.service_id, 10) 
+                : data.service_id;
+            
+            console.log("createBill: Перетворений service_id:", serviceId);
+                
             // Спочатку отримуємо інформацію про послугу для розрахунку загальної вартості
             const serviceInfo = await sqlRequest(
-                `SELECT price FROM sport.services WHERE id = $1`,
-                [data.service_id]
+                `SELECT id, name, price FROM sport.services WHERE id = $1`,
+                [serviceId]
             );
             
-            if (!serviceInfo.length) {
-                throw new Error('Послугу не знайдено');
+            console.log("createBill: Результат запиту послуги:", serviceInfo);
+            
+            if (!serviceInfo || !serviceInfo.length) {
+                // Виконаємо додатковий запит для діагностики
+                const allServices = await sqlRequest(
+                    `SELECT id, name FROM sport.services LIMIT 10`
+                );
+                console.log("createBill: Всі доступні послуги:", allServices);
+                
+                throw new Error('Послугу не знайдено. ID: ' + serviceId);
             }
             
             const totalPrice = serviceInfo[0].price * data.quantity;
@@ -214,7 +233,7 @@ class SportsComplexRepository {
             const result = await sqlRequest(sql, [
                 data.account_number,
                 data.payer,
-                data.service_id,
+                serviceId,  // Використовуємо перетворений ID
                 data.quantity,
                 totalPrice,
                 data.status
@@ -222,6 +241,7 @@ class SportsComplexRepository {
             
             return result[0];
         } catch (error) {
+            console.error("createBill: Помилка:", error);
             logger.error("[SportsComplexRepository][createBill]", error);
             throw error;
         }
