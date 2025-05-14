@@ -70,7 +70,7 @@ class SportsComplexRepository {
                     ) as rw,
                     count(*) over() as cnt
                     FROM sport.services s
-                    WHERE s.service_group_id = 1`;
+                    WHERE 1 = 1`;
             
             const values = [];
             let paramIndex = 1;
@@ -162,10 +162,16 @@ class SportsComplexRepository {
             throw error;
         }
     }
-
+    
     async getServicesByGroup(groupId) {
         try {
-            // Оновлений SQL-запит з більш чіткими полями та умовами
+            // Додаткова перевірка вхідних даних
+            const parsedId = parseInt(groupId, 10);
+            if (isNaN(parsedId)) {
+                console.error(`Invalid group ID: ${groupId}`);
+                return []; // Повертаємо порожній масив замість помилки
+            }
+            
             const sql = `
                 SELECT 
                     id, 
@@ -178,15 +184,20 @@ class SportsComplexRepository {
                 ORDER BY name
             `;
             
-            console.log(`Executing SQL query: ${sql} with params: [${groupId}]`);
-            const result = await sqlRequest(sql, [groupId]);
-            console.log(`SQL query result: ${JSON.stringify(result)}`);
+            const result = await sqlRequest(sql, [parsedId]);
             
-            return result;
+            // Форматуємо дані перед поверненням
+            return result.map(service => ({
+                id: service.id,
+                name: service.name,
+                unit: service.unit,
+                price: service.price,
+                service_group_id: service.service_group_id
+            }));
         } catch (error) {
             console.error("SQL error in getServicesByGroup:", error);
             logger.error("[SportsComplexRepository][getServicesByGroup]", error);
-            throw error;
+            return []; // Повертаємо порожній масив у випадку помилки
         }
     }
 
@@ -313,9 +324,7 @@ class SportsComplexRepository {
                     s.unit,
                     p.quantity,
                     p.total_price,
-                    p.status,
-                    p.created_at,
-                    p.updated_at
+                    p.status
                 FROM 
                     sport.payments p
                 JOIN 
@@ -337,7 +346,7 @@ class SportsComplexRepository {
         try {
             const sql = `
                 UPDATE sport.payments
-                SET status = $2, updated_at = CURRENT_TIMESTAMP
+                SET status = $2
                 WHERE id = $1
                 RETURNING id
             `;
@@ -348,6 +357,22 @@ class SportsComplexRepository {
             throw error;
         }
     }
+
+    /*async updateBillStatus(id, status) {
+        try {
+            const sql = `
+                UPDATE sport.payments
+                SET status = $2, updated_at = CURRENT_TIMESTAMP
+                WHERE id = $1
+                RETURNING id
+            `;
+            const result = await sqlRequest(sql, [id, status]);
+            return result[0];
+        } catch (error) {
+            logger.error("[SportsComplexRepository][updateBillStatus]", error);
+            throw error;
+        }
+    }*/
 
     async createServiceGroup(data) {
         const sql = `

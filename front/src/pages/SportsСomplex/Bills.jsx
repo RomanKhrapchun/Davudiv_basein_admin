@@ -138,17 +138,14 @@ const Bills = () => {
             });
             
             if (response?.data) {
-                // Переконайтеся, що кожен об'єкт має правильний формат { value, label }
-                const formattedServices = response.data.map(service => ({
-                    value: service.id,         // числовий ID
-                    label: service.name,       // текстова мітка для відображення
-                    unit: service.unit,        // додаткові дані
-                    price: service.price       // додаткові дані
-                }));
-                
                 setCreateModalState(prev => ({
                     ...prev,
-                    services: formattedServices
+                    services: response.data.map(service => ({
+                        value: service.id,
+                        label: service.name,
+                        unit: service.unit,
+                        price: service.price
+                    }))
                 }));
             }
         } catch (error) {
@@ -162,7 +159,7 @@ const Bills = () => {
     };
 
     const startRecord = ((state.sendData.page || 1) - 1) * state.sendData.limit + 1;
-    const endRecord = Math.min(startRecord + state.sendData.limit - 1, data?.totalItems || 1);
+    const endRecord = Math.min(startRecord + state.sendData.limit - 1, parseInt(data?.totalItems) || 1);
 
     // Визначення колонок таблиці
     const columnTable = useMemo(() => [
@@ -241,7 +238,27 @@ const Bills = () => {
                                 <Button
                                     title="Скасувати"
                                     icon={cancelIcon}
-                                    onClick={() => handleOpenChangeStateModal(record, 'Скасовано')}
+                                    onClick={async () => {
+                                        try {
+                                            await fetchFunction(`/api/sportscomplex/bills/${record.id}/status`, {
+                                                method: 'put',
+                                                data: { status: 'Скасовано' }
+                                            });
+                                            notification({
+                                                type: 'success',
+                                                message: `Рахунок №${record.account_number} скасовано`
+                                            });
+                                            retryFetch('/api/sportscomplex/bills/filter', {
+                                                method: 'post',
+                                                data: state.sendData
+                                            });
+                                        } catch (e) {
+                                            notification({
+                                                type: 'error',
+                                                message: 'Не вдалося скасувати рахунок'
+                                            });
+                                        }
+                                    }}
                                 />
                             </div>
                         );
@@ -278,18 +295,22 @@ const Bills = () => {
     ], [navigate]);
 
     // Підготовка даних для таблиці
-    const tableData = useMemo(() => (data?.items || []).map(el => ({
-        key: el.id,
-        id: el.id,
-        account_number: el.account_number,
-        payer: el.payer,
-        service_group: el.service_group,
-        service_name: el.service_name,
-        unit: el.unit,
-        quantity: el.quantity,
-        total_price: el.total_price,
-        status: el.status
-    })), [data]);
+    const tableData = useMemo(() => {
+        if (!Array.isArray(data?.items)) return [];
+        return data.items.map(el => ({
+            key: el.id,
+            id: el.id,
+            account_number: el.account_number,
+            payer: el.payer,
+            service_group: el.service_group,
+            service_name: el.service_name,
+            unit: el.unit,
+            quantity: el.quantity,
+            total_price: el.total_price,
+            status: el.status
+        }));
+    }, [data]);
+
 
     // Пункти меню для вибору кількості записів на сторінці
     const itemMenu = [16, 32, 48].map(size => ({
@@ -330,7 +351,6 @@ const Bills = () => {
         });
     };
     
-    /*
     // Функція для обробки вибору групи послуг
     const handleServiceGroupChange = (value, option) => {
         setCreateModalState(prev => ({
@@ -349,26 +369,29 @@ const Bills = () => {
         // Завантажуємо послуги для вибраної групи
         loadServicesForGroup(value);
     };
-    
+
     // Функція для обробки вибору послуги
-    const handleServiceChange = (value, option) => {
+    const handleServiceChange = (value) => {
+        const option = createModalState.services.find(service => service.value === value);
         if (option) {
-            const { unit, price } = option;
+            const { label, unit, price } = option;
             const quantity = createModalState.formData.quantity || 1;
-            
+
             setCreateModalState(prev => ({
                 ...prev,
                 formData: {
                     ...prev.formData,
                     service_id: value,
-                    service_name: option.label,
+                    service_name: label,
                     unit,
                     price,
                     total_price: price * quantity
                 }
             }));
         }
-    };*/
+    };
+
+
 
     // Функції для фільтрів
     const resetFilters = () => {
@@ -442,7 +465,7 @@ const Bills = () => {
             });
             
             // Оновлюємо дані в таблиці
-            retryFetch('/api/sportscomplex/bills', {
+            retryFetch('/api/sportscomplex/bills/filter', {
                 method: 'post',
                 data: state.sendData,
             });
@@ -639,6 +662,38 @@ const Bills = () => {
                             }
                         </h2>
                         <div className="table-header__buttons">
+                            <Button
+                                className="btn--secondary"
+                                onClick={() => {
+                                    const firstBill = data?.items?.[0];
+                                    if (firstBill) {
+                                        let nextStatus;
+                                        switch(firstBill.status) {
+                                            case 'В процесі':
+                                                nextStatus = 'Оплачено';
+                                                break;
+                                            case 'Оплачено':
+                                                nextStatus = 'Скасовано';
+                                                break;
+                                            case 'Скасовано':
+                                            default:
+                                                nextStatus = 'В процесі';
+                                        }
+
+                                        handleOpenChangeStateModal(firstBill, nextStatus);
+                                    } else {
+                                        notification({
+                                            type: 'warning',
+                                            title: 'Помилка',
+                                            message: 'Немає записів для зміни стану',
+                                            placement: 'top',
+                                        });
+                                    }
+                                }}
+                            >
+                                Змінити стан
+                            </Button>
+
                             {/* Кнопка "Створити" замість "Додати" */}
                             <Button 
                                 className="btn--primary"
@@ -669,11 +724,14 @@ const Bills = () => {
                             style={{width: data?.items?.length > 0 ? 'auto' : '100%'}} 
                             className={classNames("table-and-pagination-wrapper", {"table-and-pagination-wrapper--active": state.isOpen})}
                         >
-                            <Table columns={columnTable} dataSource={tableData} />
+                            <Table 
+                                columns={Array.isArray(columnTable) ? columnTable.filter(Boolean) : []} 
+                                dataSource={Array.isArray(tableData) ? tableData : []}
+                            />
                             <Pagination 
                                 className="m-b" 
                                 currentPage={parseInt(data?.currentPage) || 1} 
-                                totalCount={data?.totalItems || 1} 
+                                totalCount={parseInt(data?.totalItems) || 1} 
                                 pageSize={state.sendData.limit} 
                                 onPageChange={onPageChange} 
                             />
@@ -767,7 +825,7 @@ const Bills = () => {
                                     placeholder="Введіть ПІБ платника"
                                 />
                             </FormItem>
-
+                            
                             <FormItem 
                                 label="Група послуг" 
                                 required 
@@ -776,33 +834,11 @@ const Bills = () => {
                                 <Select
                                     placeholder="Виберіть групу послуг"
                                     value={createModalState.formData.service_group_id}
-                                    onChange={(value) => {
-                                        console.log("Вибрана група:", value);
-                                        
-                                        setCreateModalState(prev => ({
-                                            ...prev,
-                                            formData: {
-                                                ...prev.formData,
-                                                service_group_id: value,
-                                                service_id: '',
-                                                service_name: '',
-                                                unit: '',
-                                                price: 0,
-                                                total_price: 0
-                                            }
-                                        }));
-                                        
-                                        if (value) {
-                                            loadServicesForGroup(value);
-                                        }
-                                    }}
+                                    onChange={handleServiceGroupChange}
                                     options={createModalState.serviceGroups}
-                                    allowClear={true}
-                                    showSearch={true}
-                                    ptionFilterProp="label"
                                 />
                             </FormItem>
-
+                            
                             <FormItem 
                                 label="Назва послуги" 
                                 required 
@@ -811,36 +847,7 @@ const Bills = () => {
                                 <Select
                                     placeholder="Виберіть послугу"
                                     value={createModalState.formData.service_id}
-                                    // Обробник подій приймає тільки значення
-                                    onChange={(value) => {
-                                        console.log("Вибрана послуга:", value);
-                                        
-                                        setCreateModalState(prev => ({
-                                            ...prev,
-                                            formData: {
-                                                ...prev.formData,
-                                                service_id: value
-                                            }
-                                        }));
-                                        
-                                        if (value) {
-                                            const selectedService = createModalState.services.find(s => s.value === value);
-                                            if (selectedService) {
-                                                const quantity = createModalState.formData.quantity || 1;
-                                                
-                                                setCreateModalState(prev => ({
-                                                    ...prev,
-                                                    formData: {
-                                                        ...prev.formData,
-                                                        service_name: selectedService.label,
-                                                        unit: selectedService.unit,
-                                                        price: selectedService.price,
-                                                        total_price: selectedService.price * quantity
-                                                    }
-                                                }));
-                                            }
-                                        }
-                                    }}
+                                    onChange={handleServiceChange}
                                     options={createModalState.services}
                                     disabled={!createModalState.formData.service_group_id}
                                 />

@@ -93,13 +93,13 @@ class SportsComplexController {
             console.log("getServicesByGroup викликано з ID:", request.params.id);
             const data = await sportsComplexService.getServicesByGroup(request.params.id);
             console.log("Дані для відповіді:", data);
-            return reply.send(data);
+            
+            // Переконайтеся, що повертаємо масив навіть якщо даних немає
+            return reply.send(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Помилка getServicesByGroup:", error);
-            return reply.code(500).send({ 
-                error: "Не вдалося отримати послуги для групи.",
-                details: error.message
-            });
+            // Повертаємо порожній масив замість помилки
+            return reply.send([]);
         }
     }
 

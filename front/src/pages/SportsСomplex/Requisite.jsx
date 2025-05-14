@@ -27,7 +27,7 @@ const addIcon = generateIcon(iconMap.add);
 const dropDownStyle = { width: '100%' };
 const childDropDownStyle = { justifyContent: 'center' };
 
-const SportsComplexDetails = () => {
+const Requisite = () => {
     const navigate = useNavigate();
     const notification = useNotification();
     const { store } = useContext(Context);
@@ -517,4 +517,4 @@ const SportsComplexDetails = () => {
     );
 };
 
-export default SportsComplexDetails;
+export default Requisite;

@@ -15,7 +15,8 @@ import Dropdown from "../../components/common/Dropdown/Dropdown";
 import SkeletonPage from "../../components/common/Skeleton/SkeletonPage";
 import Modal from "../../components/common/Modal/Modal.jsx";
 import { Transition } from "react-transition-group";
-import FormItem from "../../components/common/FormItem/FormItem"; // Додано для форми
+import FormItem from "../../components/common/FormItem/FormItem";
+import Select from "../../components/common/Select/Select";
 
 // Іконки
 const viewIcon = generateIcon(iconMap.view);
@@ -29,7 +30,7 @@ const saveIcon = generateIcon(iconMap.save); // Додано іконку для
 const dropDownStyle = { width: '100%' };
 const childDropDownStyle = { justifyContent: 'center' };
 
-const PoolServices = () => {
+const Services = () => {
     const navigate = useNavigate();
     const notification = useNotification();
     const { store } = useContext(Context);
@@ -55,9 +56,12 @@ const PoolServices = () => {
         formData: {
             name: '',
             unit: '',
-            price: ''
+            price: '',
+            service_group_id: ''
         }
     });
+
+    const [serviceGroups, setServiceGroups] = useState([]);
 
     const { error, status, data, retryFetch } = useFetch('/api/sportscomplex/filter-pool', {
         method: 'post',
@@ -77,6 +81,29 @@ const PoolServices = () => {
             data: state.sendData,
         });
     }, [state.sendData, retryFetch]);
+
+    useEffect(() => {
+        const fetchServiceGroups = async () => {
+            try {
+                const res = await fetchFunction('/api/sportscomplex/service-groups', { method: 'get' });
+                if (res?.data) {
+                    setServiceGroups(res.data.map(group => ({
+                        value: group.id,
+                        label: group.name
+                    })));
+                }
+            } catch (err) {
+                notification({
+                    type: 'error',
+                    title: 'Помилка',
+                    message: 'Не вдалося завантажити групи послуг',
+                    placement: 'top'
+                });
+            }
+        };
+
+        fetchServiceGroups();
+    }, []);
 
     const columnTable = useMemo(() => [
         {
@@ -221,11 +248,13 @@ const PoolServices = () => {
             formData: {
                 name: '',
                 unit: '',
-                price: ''
+                price: '',
+                service_group_id: ''
             }
         }));
         document.body.style.overflow = 'hidden';
     };
+
     
     const closeAddModal = () => {
         setAddModalState(prev => ({
@@ -237,10 +266,10 @@ const PoolServices = () => {
     
     // Функція для обробки відправки форми додавання
     const handleAddFormSubmit = async () => {
-        const { name, unit, price } = addModalState.formData;
-        
+        const { name, unit, price, service_group_id } = addModalState.formData;
+
         // Валідація форми
-        if (!name || !unit || !price) {
+        if (!name || !unit || !price || !service_group_id?.value) {
             notification({
                 type: 'warning',
                 placement: 'top',
@@ -249,10 +278,10 @@ const PoolServices = () => {
             });
             return;
         }
-        
+
         try {
-            setAddModalState(prev => ({...prev, loading: true}));
-            
+            setAddModalState(prev => ({ ...prev, loading: true }));
+
             // Відправка даних до серверу
             await fetchFunction('/api/sportscomplex/services', {
                 method: 'post',
@@ -260,24 +289,23 @@ const PoolServices = () => {
                     name,
                     unit,
                     price: parseFloat(price),
-                    service_group_id: 1 // ID групи послуг для басейну
+                    service_group_id: service_group_id.value, // <-- витягуємо ID з обʼєкта
                 }
             });
-            
+
             notification({
                 type: 'success',
                 placement: 'top',
                 title: 'Успіх',
                 message: 'Послугу успішно додано',
             });
-            
-            // Оновлення даних в таблиці
+
+            // Оновлення таблиці
             retryFetch('/api/sportscomplex/filter-pool', {
                 method: 'post',
                 data: state.sendData,
             });
-            
-            // Закриття модального вікна
+
             closeAddModal();
         } catch (error) {
             if (error?.response?.status === 401) {
@@ -290,7 +318,7 @@ const PoolServices = () => {
                 store.logOff();
                 return navigate('/');
             }
-            
+
             notification({
                 type: 'warning',
                 title: "Помилка",
@@ -298,7 +326,7 @@ const PoolServices = () => {
                 placement: 'top',
             });
         } finally {
-            setAddModalState(prev => ({...prev, loading: false}));
+            setAddModalState(prev => ({ ...prev, loading: false }));
         }
     };
 
@@ -503,7 +531,21 @@ const PoolServices = () => {
                                     placeholder="Введіть одиницю виміру (наприклад, година)"
                                 />
                             </FormItem>
-                            
+
+                            <FormItem 
+                                label="Група послуг" 
+                                required 
+                                fullWidth
+                            >
+                                <Select
+                                name="service_group_id"
+                                placeholder="Виберіть групу"
+                                value={addModalState.formData.service_group_id}
+                                onChange={(name, option) => onAddFormChange(name, option)}
+                                options={serviceGroups}
+                                />
+                            </FormItem>
+
                             <FormItem 
                                 label="Ціна" 
                                 required 
@@ -525,4 +567,4 @@ const PoolServices = () => {
     );
 };
 
-export default PoolServices;
+export default Services;

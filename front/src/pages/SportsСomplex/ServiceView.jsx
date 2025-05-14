@@ -9,7 +9,7 @@ import PageError from "../ErrorPage/PageError";
 
 const onBackIcon = generateIcon(iconMap.back)
 
-const PoolServiceView = () => {
+const ServiceView = () => {
     const { serviceId } = useParams()
     const navigate = useNavigate()
     const { error, status, data } = useFetch(`api/sportscomplex/service/${serviceId}`)
@@ -61,4 +61,4 @@ const PoolServiceView = () => {
     );
 }
 
-export default PoolServiceView;
+export default ServiceView;

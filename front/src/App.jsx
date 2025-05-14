@@ -37,13 +37,15 @@ const AccountCreate = lazy(() => import('./pages/CNAP/AccountCreate.jsx'));
 const PrintCNAPView = lazy(() => import('./components/Cards/PrintCNAPCard.jsx'));
 const KindergartenDebtorsList = lazy(() => import('./pages/Kindergarten/KindergartenList.jsx'))
 const PrintKindergartenCardView = lazy(() => import ('./components/Cards/PrintKindergartenCard.jsx'))
-const SportsСomplexDetails = lazy(() => import('./pages/SportsСomplex/SportsСomplexDetails.jsx'));
+const Requisite = lazy(() => import('./pages/SportsСomplex/Requisite.jsx'));
 const Bills = lazy(() => import('./pages/SportsСomplex/Bills.jsx'));
-const PoolServices = lazy(() => import('./pages/SportsСomplex/PoolServices.jsx'));
+const Services = lazy(() => import('./pages/SportsСomplex/Services.jsx'));
 const RequisiteView = lazy(() => import('./pages/SportsСomplex/RequisiteView'));
 const RequisiteEdit = lazy(() => import('./pages/SportsСomplex/RequisiteEdit'));
-const PoolServiceView = lazy(() => import('./pages/SportsСomplex/PoolServiceView'));
-const PoolServiceEdit = lazy(() => import('./pages/SportsСomplex/PoolServiceEdit'));
+const SportsServiceView = lazy(() => import('./pages/SportsСomplex/ServiceView.jsx'));
+const PoolServiceEdit = lazy(() => import('./pages/SportsСomplex/ServiceEdit.jsx'));
+const BillDetails = lazy(() => import('./pages/SportsСomplex/BillDetails.jsx'));
+const PrintBillCard = lazy(() => import('./components/Cards/PrintBillCard.jsx'));
 function App() {
     return (
         <BrowserRouter>
@@ -86,13 +88,15 @@ function App() {
                     <Route path="cnap/accounts/:debtId/print" element={<Suspense fallback={<Loader/>}><PrintCNAPView /></Suspense>}/>
                     <Route exact path="kindergarten" element={<Suspense fallback={<Loader/>}><KindergartenDebtorsList /></Suspense>} />
                     <Route exact path="kindergarten/:id/print" element={<Suspense fallback={<Loader/>}><PrintKindergartenCardView /></Suspense>} />
-                    <Route exact path="details" element={<Suspense fallback={<Loader />}><SportsСomplexDetails /></Suspense>} />
+                    <Route exact path="details" element={<Suspense fallback={<Loader />}><Requisite /></Suspense>} />
                     <Route exact path="bills" element={<Suspense fallback={<Loader />}><Bills /></Suspense>} />
-                    <Route exact path="poolservices" element={<Suspense fallback={<Loader />}><PoolServices /></Suspense>} />
+                    <Route exact path="poolservices" element={<Suspense fallback={<Loader />}><Services /></Suspense>} />
                     <Route path="requisite/:requisiteId" element={<Suspense fallback={<Loader/>}><RequisiteView /></Suspense>} />
                     <Route path="requisite/:requisiteId/edit" element={<Suspense fallback={<Loader/>}><RequisiteEdit /></Suspense>} />
-                    <Route path="poolservice/:serviceId" element={<Suspense fallback={<Loader/>}><PoolServiceView /></Suspense>} />
+                    <Route path="poolservice/:serviceId" element={<Suspense fallback={<Loader/>}><SportsServiceView /></Suspense>} />
                     <Route path="poolservice/:serviceId/edit" element={<Suspense fallback={<Loader/>}><PoolServiceEdit /></Suspense>} />
+                    <Route path="/bills/:id/requisites" element={<Suspense fallback={<Loader />}><BillDetails /></Suspense>} />
+                    <Route path="/bills/:id/print" element={<Suspense fallback={<Loader />}><PrintBillCard /></Suspense>} />
                     <Route path="*" element={<PageError title="Схоже, цієї сторінки не знайдено." statusError="404"/>}/>
                 </Route>
             </Routes>

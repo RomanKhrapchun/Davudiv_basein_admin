@@ -4,6 +4,33 @@ const TableRow = ({ data, columns }) => {
     return (
         <>
             {data?.length > 0
+                ? (data.map((item, index) => {
+                    if (!item) return null;
+                    return (
+                        <tr key={index}>
+                            {columns
+                                .filter(column => column && typeof column.dataIndex !== 'undefined')
+                                .map((column, colIndex) => (
+                                    <TableRowCell key={colIndex} item={item} column={column} />
+                                ))}
+                        </tr>
+                    );
+                }))
+                : (
+                    <tr>
+                        <td colSpan={columns.length} style={{ textAlign: 'center' }}>Відсутні дані</td>
+                    </tr>
+                )}
+        </>
+    );
+};
+
+export default TableRow;
+
+/*const TableRow = ({ data, columns }) => {
+    return (
+        <>
+            {data?.length > 0
              ? (data.map((item, index) => {
                     if (!item) return null
                     return <tr key={index}>
@@ -20,4 +47,4 @@ const TableRow = ({ data, columns }) => {
     );
 };
 
-export default TableRow;
+export default TableRow;*/

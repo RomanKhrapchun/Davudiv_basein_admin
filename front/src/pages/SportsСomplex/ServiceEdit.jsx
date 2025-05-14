@@ -14,7 +14,7 @@ import PageError from "../ErrorPage/PageError";
 const onBackIcon = generateIcon(iconMap.back);
 const onSaveIcon = generateIcon(iconMap.save);
 
-const PoolServiceEdit = () => {
+const ServiceEdit = () => {
     const { serviceId } = useParams();
     const navigate = useNavigate();
     const notification = useNotification();
@@ -170,4 +170,4 @@ const PoolServiceEdit = () => {
     );
 };
 
-export default PoolServiceEdit;
+export default ServiceEdit;
