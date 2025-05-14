@@ -34,7 +34,7 @@ class SportsComplexService {
 
         return paginationData(data[0], page, limit, data[1]);
     }
-
+    
     async findPoolServicesByFilter(request) {
         const { page = 1, limit = 16, ...whereConditions } = request.body;
         const { offset } = paginate(page, limit);
@@ -182,7 +182,11 @@ class SportsComplexService {
 
     async getServicesByGroup(id) {
         try {
-            return await sportsComplexRepository.getServicesByGroup(id);
+            // Додамо логування для діагностики
+            console.log(`Getting services for group ID: ${id}`);
+            const result = await sportsComplexRepository.getServicesByGroup(id);
+            console.log(`Found ${result.length} services for group ID: ${id}`);
+            return result;
         } catch (error) {
             logger.error("[SportsComplexService][getServicesByGroup]", error);
             throw error;
@@ -234,10 +238,10 @@ class SportsComplexService {
             
             const allowedFields = allowedBillsFilterFields.filter(el => whereConditions.hasOwnProperty(el)).reduce((acc, key) => ({ ...acc, [key]: whereConditions[key] }), {});
 
-            const data = await sportsComplexRepository.findRequisitesByFilter(limit, offset, displayBillsFilterFields, allowedFields);
+            const data = await sportsComplexRepository.findBillsByFilter(limit, offset, displayBillsFilterFields, allowedFields);
             
             // Логування операції пошуку, якщо є фільтри
-            if (Object.keys(filters).length > 0) {
+            if (Object.keys(whereConditions).length > 0) {
                 await logRepository.createLog({
                     row_pk_id: null,
                     uid: request?.user?.id,
@@ -349,6 +353,114 @@ class SportsComplexService {
             return pdfBuffer;
         } catch (error) {
             logger.error("[SportsComplexService][generateBillReceipt]", error);
+            throw error;
+        }
+    }
+
+    async createServiceGroup(request) {
+        try {
+            const { name } = request.body;
+            const result = await sportsComplexRepository.createServiceGroup({ name });
+            
+            // Логування операції
+            await logRepository.createLog({
+                row_pk_id: result.id,
+                uid: request?.user?.id,
+                action: 'INSERT',
+                client_addr: request?.ip,
+                application_name: 'Створення групи послуг',
+                action_stamp_tx: new Date(),
+                action_stamp_stm: new Date(),
+                action_stamp_clk: new Date(),
+                schema_name: 'public',
+                table_name: 'service_groups',
+                oid: '16503',
+            });
+            
+            return result;
+        } catch (error) {
+            logger.error("[SportsComplexService][createServiceGroup]", error);
+            throw error;
+        }
+    }
+
+    async updateRequisite(request) {
+        try {
+            const { id } = request.params;
+            const { kved, iban, edrpou, service_group_id } = request.body;
+            
+            const result = await sportsComplexRepository.updateRequisite(id, {
+                kved,
+                iban,
+                edrpou,
+                service_group_id
+            });
+            
+            if (!result) {
+                throw new Error('Реквізити не знайдено');
+            }
+            
+            // Логування операції
+            await logRepository.createLog({
+                row_pk_id: id,
+                uid: request?.user?.id,
+                action: 'UPDATE',
+                client_addr: request?.ip,
+                application_name: 'Оновлення реквізитів',
+                action_stamp_tx: new Date(),
+                action_stamp_stm: new Date(),
+                action_stamp_clk: new Date(),
+                schema_name: 'public',
+                table_name: 'requisites',
+                oid: '16504',
+            });
+            
+            return { success: true, message: 'Реквізити успішно оновлено' };
+        } catch (error) {
+            logger.error("[SportsComplexService][updateRequisite]", error);
+            throw error;
+        }
+    }
+
+    async getServiceById(id) {
+        try {
+            return await sportsComplexRepository.getServiceById(id);
+        } catch (error) {
+            logger.error("[SportsComplexService][getServiceById]", error);
+            throw error;
+        }
+    }
+
+    async updateService(request) {
+        try {
+            const { id } = request.params;
+            const { name, unit, price, service_group_id } = request.body;
+            
+            const result = await sportsComplexRepository.updateService(id, {
+                name,
+                unit,
+                price,
+                service_group_id
+            });
+            
+            // Логування операції
+            await logRepository.createLog({
+                row_pk_id: id,
+                uid: request?.user?.id,
+                action: 'UPDATE',
+                client_addr: request?.ip,
+                application_name: 'Оновлення послуги басейну',
+                action_stamp_tx: new Date(),
+                action_stamp_stm: new Date(),
+                action_stamp_clk: new Date(),
+                schema_name: 'public',
+                table_name: 'services',
+                oid: '16505',
+            });
+            
+            return { success: true, message: 'Послугу успішно оновлено' };
+        } catch (error) {
+            logger.error("[SportsComplexService][updateService]", error);
             throw error;
         }
     }

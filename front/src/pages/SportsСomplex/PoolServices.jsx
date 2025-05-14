@@ -94,17 +94,17 @@ const PoolServices = () => {
         {
             title: 'Дія',
             dataIndex: 'action',
-            render: (_, { id }) => (
-                <div className="btn-sticky" style={{ justifyContent: 'center' }}>
-                    <Button
-                        title="Перегляд"
-                        icon={viewIcon}
-                        onClick={() => navigate(`/poolservices/${id}`)}
+            render: (_, {id}) => (
+                <div className="btn-sticky" style={{justifyContent: 'center'}}>
+                    <Button 
+                        title="Перегляд" 
+                        icon={viewIcon} 
+                        onClick={() => navigate(`/poolservice/${id}`)} 
                     />
-                    <Button
-                        title="Редагувати"
-                        icon={editIcon}
-                        onClick={() => navigate(`/poolservices/${id}/edit`)}
+                    <Button 
+                        title="Редагувати" 
+                        icon={editIcon} 
+                        onClick={() => navigate(`/poolservice/${id}/edit`)} 
                     />
                 </div>
             ),

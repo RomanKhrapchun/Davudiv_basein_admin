@@ -94,7 +94,12 @@ class SportsComplexController {
             return reply.send(data);
         } catch (error) {
             logger.error("[getServicesByGroup]", error);
-            return reply.code(500).send({ error: "Не вдалося отримати послуги для групи." });
+            // Повертаємо детальніше повідомлення про помилку для діагностики
+            return reply.code(500).send({ 
+                error: "Не вдалося отримати послуги для групи.", 
+                details: error.message,
+                stack: error.stack 
+            });
         }
     }
 
@@ -147,6 +152,46 @@ class SportsComplexController {
         } catch (error) {
             logger.error("[generateBillReceipt]", error);
             return reply.code(500).send({ error: "Помилка генерації квитанції." });
+        }
+    }
+
+    async createServiceGroup(request, reply) {
+        try {
+            const result = await sportsComplexService.createServiceGroup(request);
+            return reply.send(result);
+        } catch (error) {
+            logger.error("[createServiceGroup]", error);
+            return reply.code(500).send({ error: "Не вдалося створити групу послуг." });
+        }
+    }
+
+    async updateRequisite(request, reply) {
+        try {
+            const result = await sportsComplexService.updateRequisite(request);
+            return reply.send(result);
+        } catch (error) {
+            logger.error("[updateRequisite]", error);
+            return reply.code(500).send({ error: "Не вдалося оновити реквізити." });
+        }
+    }
+
+    async getServiceById(request, reply) {
+        try {
+            const data = await sportsComplexService.getServiceById(request.params.id);
+            return reply.send(data);
+        } catch (error) {
+            logger.error("[getServiceById]", error);
+            return reply.code(500).send({ error: "Не вдалося отримати дані послуги." });
+        }
+    }
+
+    async updateService(request, reply) {
+        try {
+            const result = await sportsComplexService.updateService(request);
+            return reply.send(result);
+        } catch (error) {
+            logger.error("[updateService]", error);
+            return reply.code(500).send({ error: "Не вдалося оновити послугу." });
         }
     }
 }

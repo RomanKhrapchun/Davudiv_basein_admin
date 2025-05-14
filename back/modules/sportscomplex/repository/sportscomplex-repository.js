@@ -5,45 +5,89 @@ const logger = require("../../../utils/logger");
 const { buildWhereCondition } = require("../../../utils/function");
 
 class SportsComplexRepository {
-    async findRequisitesByFilter(limit, offset, filters, allowedFields) {
-        let sql = `
-            SELECT r.id, r.kved, r.iban, r.edrpou, sg.name AS group_name
-            FROM sport.requisites r
-            LEFT JOIN sport.service_groups sg ON r.service_group_id = sg.id
-            WHERE 1=1`;
-
-        for (filters in allowedFields) {
-            sql += ` AND r.${filters} ILIKE '%${allowedFields[filters]}%'`;
-        }
-
-        sql += ` ORDER BY r.id LIMIT ${limit} OFFSET ${offset}`;
-
+    async findRequisitesByFilter(limit, offset, displayFields, allowedFields) {
         try {
-            const result = await sqlRequest(sql);
-            const countResult = await sqlRequest(`SELECT COUNT(*) FROM sport.requisites r WHERE 1=1` + Object.keys(allowedFields).map(k => ` AND r.${k} ILIKE '%${allowedFields[k]}%'`).join(""));
-            return [result, +countResult[0].count];
+            // Перетворюємо масив полів на рядок для SQL
+            const displayFieldsStr = displayFields.map(field => 
+                field.includes('.') ? field : `r.${field}`).join(', ');
+            
+            // Підготовка SQL-запиту у форматі, схожому на debtor
+            let sql = `
+                SELECT json_agg(rw) as data,
+                max(cnt) as count
+                FROM (
+                    SELECT json_build_object(
+                        'id', r.id,
+                        'kved', r.kved,
+                        'iban', r.iban,
+                        'edrpou', r.edrpou,
+                        'group_name', sg.name
+                    ) as rw,
+                    count(*) over() as cnt
+                    FROM sport.requisites r
+                    LEFT JOIN sport.service_groups sg ON r.service_group_id = sg.id
+                    WHERE 1=1`;
+            
+            const values = [];
+            let paramIndex = 1;
+            
+            // Додаємо фільтри, якщо вони є
+            for (const key in allowedFields) {
+                sql += ` AND r.${key} ILIKE $${paramIndex}`;
+                values.push(`%${allowedFields[key]}%`);
+                paramIndex++;
+            }
+            
+            // Додаємо сортування, ліміт та офсет
+            sql += ` ORDER BY r.id DESC LIMIT $${paramIndex} OFFSET $${paramIndex+1}) q`;
+            values.push(limit, offset);
+            
+            // Виконуємо запит
+            const result = await sqlRequest(sql, values);
+            
+            // Повертаємо у тому ж форматі, як і debtor
+            return result;
         } catch (error) {
+            console.error("SQL Error:", error);
             logger.error("[SportsComplexRepository][findRequisitesByFilter]", error);
             throw error;
         }
     }
 
-    async findPoolServicesByFilter(limit, offset, filters, allowedFields) {
-        let sql = `
-            SELECT s.id, s.name AS serviceName, s.unit, s.price, s.service_group_id
-            FROM sport.services s
-            WHERE s.service_group_id = 1`;
-
-        for (filters in allowedFields) {
-            sql += ` AND s.${filters} ILIKE '%${allowedFields[filters]}%'`;
-        }
-
-        sql += ` ORDER BY s.id LIMIT ${limit} OFFSET ${offset}`;
-
+    async findPoolServicesByFilter(limit, offset, displayFields, allowedFields) {
         try {
-            const result = await sqlRequest(sql);
-            const countResult = await sqlRequest(`SELECT COUNT(*) FROM sport.services s WHERE s.service_group_id = 1` + Object.keys(allowedFields).map(k => ` AND s.${k} ILIKE '%${allowedFields[k]}%'`).join(""));
-            return [result, +countResult[0].count];
+            // Використовуємо JSON_AGG та JSON_BUILD_OBJECT як і в інших методах для узгодженості
+            let sql = `
+                SELECT json_agg(rw) as data,
+                COALESCE(max(cnt), 0) as count
+                FROM (
+                    SELECT json_build_object(
+                        'id', s.id,
+                        'name', s.name,
+                        'unit', s.unit,
+                        'price', s.price,
+                        'service_group_id', s.service_group_id
+                    ) as rw,
+                    count(*) over() as cnt
+                    FROM sport.services s
+                    WHERE s.service_group_id = 1`;
+            
+            const values = [];
+            let paramIndex = 1;
+            
+            // Додаємо фільтри з параметризацією
+            for (const key in allowedFields) {
+                sql += ` AND s.${key} ILIKE $${paramIndex}`;
+                values.push(`%${allowedFields[key]}%`);
+                paramIndex++;
+            }
+            
+            // Додаємо сортування, ліміт та офсет
+            sql += ` ORDER BY s.id DESC LIMIT $${paramIndex} OFFSET $${paramIndex+1}) q`;
+            values.push(limit, offset);
+            
+            // Виконуємо запит
+            return await sqlRequest(sql, values);
         } catch (error) {
             logger.error("[SportsComplexRepository][findPoolServicesByFilter]", error);
             throw error;
@@ -81,7 +125,7 @@ class SportsComplexRepository {
 
     async createPoolService(data) {
         const sql = `
-            INSERT INTO services 
+            INSERT INTO sport.services 
             (name, unit, price, service_group_id) 
             VALUES ($1, $2, $3, $4)
             RETURNING id`;
@@ -96,7 +140,7 @@ class SportsComplexRepository {
 
     async createRequisite(data) {
         const sql = `
-            INSERT INTO requisites 
+            INSERT INTO sport.requisites 
             (kved, iban, edrpou, service_group_id) 
             VALUES ($1, $2, $3, $4)
             RETURNING id`;
@@ -120,14 +164,27 @@ class SportsComplexRepository {
     }
 
     async getServicesByGroup(groupId) {
-        const sql = `
-            SELECT id, name, unit, price, service_group_id
-            FROM sport.services
-            WHERE service_group_id = $1
-            ORDER BY name`;
         try {
-            return await sqlRequest(sql, [groupId]);
+            // Оновлений SQL-запит з більш чіткими полями та умовами
+            const sql = `
+                SELECT 
+                    id, 
+                    name, 
+                    unit, 
+                    price, 
+                    service_group_id
+                FROM sport.services
+                WHERE service_group_id = $1
+                ORDER BY name
+            `;
+            
+            console.log(`Executing SQL query: ${sql} with params: [${groupId}]`);
+            const result = await sqlRequest(sql, [groupId]);
+            console.log(`SQL query result: ${JSON.stringify(result)}`);
+            
+            return result;
         } catch (error) {
+            console.error("SQL error in getServicesByGroup:", error);
             logger.error("[SportsComplexRepository][getServicesByGroup]", error);
             throw error;
         }
@@ -149,7 +206,7 @@ class SportsComplexRepository {
             
             // Створюємо рахунок
             const sql = `
-                INSERT INTO payments
+                INSERT INTO sport.payments
                 (account_number, payer, service_id, quantity, total_price, status)
                 VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING id`;
@@ -170,72 +227,52 @@ class SportsComplexRepository {
         }
     }
 
-    async findBillsByFilter(limit, offset, title, whereConditions = {}, displayFields = []) {
-        const values = [];
-        
-        let sql = `
-            SELECT 
-                p.id,
-                p.account_number,
-                p.payer,
-                sg.name AS service_group,
-                s.name AS service_name,
-                s.unit,
-                p.quantity,
-                p.total_price AS amount,
-                p.status
-            FROM 
-                sport.payments p
-            JOIN 
-                sport.services s ON p.service_id = s.id
-            JOIN 
-                sport.service_groups sg ON s.service_group_id = sg.id
-            WHERE 1=1`;
-
-        if (Object.keys(whereConditions).length) {
-            const data = buildWhereCondition(whereConditions);
-            sql += data.text;
-            values.push(...data.value);
-        }
-
-        if (title) {
-            sql += ` AND (p.account_number ILIKE ? OR p.payer ILIKE ?)`;
-            values.push(`%${title}%`, `%${title}%`);
-        }
-
-        values.push(limit, offset);
-        sql += ` ORDER BY p.id DESC LIMIT ? OFFSET ?`;
-
+    async findBillsByFilter(limit, offset, displayFields, allowedFields) {
         try {
-            const result = await sqlRequest(sql, values);
+            // Підготовка SQL-запиту
+            let sql = `
+                SELECT json_agg(rw) as data,
+                COALESCE(max(cnt), 0) as count
+                FROM (
+                    SELECT json_build_object(
+                        'id', p.id,
+                        'account_number', p.account_number,
+                        'payer', p.payer,
+                        'service_group', sg.name,
+                        'service_name', s.name,
+                        'unit', s.unit,
+                        'quantity', p.quantity,
+                        'total_price', p.total_price,
+                        'status', p.status
+                    ) as rw,
+                    count(*) over() as cnt
+                    FROM sport.payments p
+                    LEFT JOIN sport.services s ON p.service_id = s.id
+                    LEFT JOIN sport.service_groups sg ON s.service_group_id = sg.id
+                    WHERE 1=1`;
             
-            // Count query
-            let countSql = `
-                SELECT COUNT(*) AS count
-                FROM 
-                    sport.payments p
-                JOIN 
-                    sport.services s ON p.service_id = s.id
-                JOIN 
-                    sport.service_groups sg ON s.service_group_id = sg.id
-                WHERE 1=1`;
-                
-            const countValues = [];
+            const values = [];
+            let paramIndex = 1;
             
-            if (Object.keys(whereConditions).length) {
-                const data = buildWhereCondition(whereConditions);
-                countSql += data.text;
-                countValues.push(...data.value);
+            // Додаємо фільтри, якщо вони є
+            for (const key in allowedFields) {
+                if (key === 'service_name') {
+                    sql += ` AND s.name ILIKE $${paramIndex}`;
+                } else if (key === 'status') {
+                    sql += ` AND p.status ILIKE $${paramIndex}`;
+                } else {
+                    sql += ` AND p.${key} ILIKE $${paramIndex}`;
+                }
+                values.push(`%${allowedFields[key]}%`);
+                paramIndex++;
             }
             
-            if (title) {
-                countSql += ` AND (p.account_number ILIKE ? OR p.payer ILIKE ?)`;
-                countValues.push(`%${title}%`, `%${title}%`);
-            }
+            // Додаємо сортування, ліміт та офсет
+            sql += ` ORDER BY p.id DESC LIMIT $${paramIndex} OFFSET $${paramIndex+1}) q`;
+            values.push(limit, offset);
             
-            const countResult = await sqlRequest(countSql, countValues);
-            
-            return [result, +countResult[0].count];
+            // Виконуємо запит
+            return await sqlRequest(sql, values);
         } catch (error) {
             logger.error("[SportsComplexRepository][findBillsByFilter]", error);
             throw error;
@@ -279,7 +316,7 @@ class SportsComplexRepository {
     async updateBillStatus(id, status) {
         try {
             const sql = `
-                UPDATE payments
+                UPDATE sport.payments
                 SET status = $2, updated_at = CURRENT_TIMESTAMP
                 WHERE id = $1
                 RETURNING id
@@ -288,6 +325,92 @@ class SportsComplexRepository {
             return result[0];
         } catch (error) {
             logger.error("[SportsComplexRepository][updateBillStatus]", error);
+            throw error;
+        }
+    }
+
+    async createServiceGroup(data) {
+        const sql = `
+            INSERT INTO sport.service_groups (name) 
+            VALUES ($1)
+            RETURNING id, name`;
+        try {
+            const result = await sqlRequest(sql, [data.name]);
+            return result[0];
+        } catch (error) {
+            logger.error("[SportsComplexRepository][createServiceGroup]", error);
+            throw error;
+        }
+    }
+
+    async updateRequisite(id, data) {
+        try {
+            const sql = `
+                UPDATE sport.requisites
+                SET 
+                    kved = $1,
+                    iban = $2,
+                    edrpou = $3,
+                    service_group_id = $4
+                WHERE id = $5
+                RETURNING id
+            `;
+            
+            const result = await sqlRequest(sql, [
+                data.kved,
+                data.iban,
+                data.edrpou,
+                data.service_group_id,
+                id
+            ]);
+            
+            return result[0];
+        } catch (error) {
+            logger.error("[SportsComplexRepository][updateRequisite]", error);
+            throw error;
+        }
+    }
+
+    async getServiceById(id) {
+        try {
+            const sql = `
+                SELECT s.*, sg.name AS group_name
+                FROM sport.services s
+                LEFT JOIN sport.service_groups sg ON s.service_group_id = sg.id
+                WHERE s.id = $1
+            `;
+            const result = await sqlRequest(sql, [id]);
+            return result[0];
+        } catch (error) {
+            logger.error("[SportsComplexRepository][getServiceById]", error);
+            throw error;
+        }
+    }
+
+    async updateService(id, data) {
+        try {
+            const sql = `
+                UPDATE sport.services
+                SET 
+                    name = $1,
+                    unit = $2,
+                    price = $3,
+                    service_group_id = $4
+                WHERE id = $5
+                RETURNING id
+            `;
+            
+            const result = await sqlRequest(sql, [
+                data.name,
+                data.unit,
+                data.price,
+                data.service_group_id,
+                id
+            ]);
+            
+            return result[0];
+        } catch (error) {
+            logger.error("[SportsComplexRepository][updateService]", error);
             throw error;
         }
     }

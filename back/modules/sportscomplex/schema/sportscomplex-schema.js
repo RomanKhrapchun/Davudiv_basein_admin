@@ -152,6 +152,82 @@ const createBillSchema = {
             min: 1,
         }
     }
+    
+}
+
+// Схема для створення групи послуг
+const createServiceGroupSchema = {
+    body: {
+        name: {
+            type: 'string',
+            minLength: 1,
+        }
+    }
+}
+
+// Схема для отримання групи послуг за ID
+const getServiceGroupSchema = {
+    params: {
+        id: {
+            type: 'string',
+            numeric: true,
+        }
+    }
+}
+
+// Схема для оновлення реквізитів
+const updateRequisiteSchema = {
+    params: {
+        id: {
+            type: 'string',
+            numeric: true,
+        }
+    },
+    body: {
+        kved: {
+            type: 'string',
+            min: 1,
+        },
+        iban: {
+            type: 'string',
+            min: 1,
+        },
+        edrpou: {
+            type: 'string',
+            min: 1,
+        },
+        service_group_id: {
+            type: 'number',
+            numeric: true,
+        }
+    }
+}
+
+const updateServiceSchema = {
+    params: {
+        id: {
+            type: 'string',
+            numeric: true,
+        }
+    },
+    body: {
+        name: {
+            type: 'string',
+            min: 1,
+        },
+        unit: {
+            type: 'string',
+            min: 1,
+        },
+        price: {
+            type: 'number',
+            minimum: 0,
+        },
+        service_group_id: {
+            type: 'number',
+            numeric: true,
+        }
+    }
 }
 
 module.exports = {
@@ -161,5 +237,9 @@ module.exports = {
     createServiceSchema,
     createRequisiteSchema,
     filterBillsSchema,
-    createBillSchema
+    createBillSchema,
+    createServiceGroupSchema,
+    getServiceGroupSchema,
+    updateRequisiteSchema,
+    updateServiceSchema 
 }

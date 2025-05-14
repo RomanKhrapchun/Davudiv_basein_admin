@@ -133,9 +133,12 @@ const Bills = () => {
     // Завантаження послуг для вибраної групи
     const loadServicesForGroup = async (groupId) => {
         try {
+            console.log(`Loading services for group ID: ${groupId}`);
             const response = await fetchFunction(`/api/sportscomplex/services-by-group/${groupId}`, {
                 method: 'get'
             });
+            
+            console.log(`Services response:`, response);
             
             if (response?.data) {
                 setCreateModalState(prev => ({
@@ -147,12 +150,21 @@ const Bills = () => {
                         price: service.price
                     }))
                 }));
+            } else {
+                console.error("No data in services response");
+                notification({
+                    type: 'warning',
+                    title: "Помилка",
+                    message: "Отримано порожню відповідь при завантаженні послуг",
+                    placement: 'top',
+                });
             }
         } catch (error) {
+            console.error("Error loading services:", error);
             notification({
                 type: 'warning',
                 title: "Помилка",
-                message: "Не вдалося завантажити послуги",
+                message: `Не вдалося завантажити послуги: ${error.message}`,
                 placement: 'top',
             });
         }

@@ -15,7 +15,7 @@ import Dropdown from "../../components/common/Dropdown/Dropdown";
 import Modal from "../../components/common/Modal/Modal.jsx";
 import { Transition } from "react-transition-group";
 import SkeletonPage from "../../components/common/Skeleton/SkeletonPage";
-import FormItem from "../../components/common/FormItem/FormItem"; // Додано для форми
+import FormItem from "../../components/common/FormItem/FormItem";
 
 const viewIcon = generateIcon(iconMap.view);
 const downloadIcon = generateIcon(iconMap.download);
@@ -23,7 +23,7 @@ const editIcon = generateIcon(iconMap.edit);
 const filterIcon = generateIcon(iconMap.filter);
 const searchIcon = generateIcon(iconMap.search, 'input-icon');
 const dropDownIcon = generateIcon(iconMap.arrowDown);
-const addIcon = generateIcon(iconMap.add); // Додано іконку для кнопки додавання
+const addIcon = generateIcon(iconMap.add);
 const dropDownStyle = { width: '100%' };
 const childDropDownStyle = { justifyContent: 'center' };
 
@@ -32,7 +32,7 @@ const SportsComplexDetails = () => {
     const notification = useNotification();
     const { store } = useContext(Context);
     const nodeRef = useRef(null);
-    const addFormRef = useRef(null); // Референція для модального вікна додавання
+    const addFormRef = useRef(null);
     const isFirstRun = useRef(true);
     
     const [state, setState] = useState({
@@ -46,7 +46,7 @@ const SportsComplexDetails = () => {
         }
     });
     
-    // Додано новий стан для модального вікна додавання
+    // Оновлений стан для модального вікна додавання з service_group_name замість service_group_id
     const [addModalState, setAddModalState] = useState({
         isOpen: false,
         loading: false,
@@ -54,7 +54,7 @@ const SportsComplexDetails = () => {
             kved: '',
             iban: '',
             edrpou: '',
-            service_group_id: '1'
+            service_group_name: '' // Тепер користувач буде вводити назву, а не ID
         }
     });
 
@@ -91,7 +91,7 @@ const SportsComplexDetails = () => {
                     <Button 
                         title="Перегляд" 
                         icon={viewIcon} 
-                        onClick={() => navigate(`/details/${id}`)} 
+                        onClick={() => navigate(`/requisite/${id}`)}
                     />
                     <Button 
                         title="Завантажити" 
@@ -99,9 +99,9 @@ const SportsComplexDetails = () => {
                         onClick={() => handleOpenModal(id)} 
                     />
                     <Button 
-                        title="Реквізити" 
+                        title="Редагувати"
                         icon={editIcon} 
-                        onClick={() => navigate(`/details/${id}/print`)} 
+                        onClick={() => navigate(`/requisite/${id}/edit`)}
                     />
                 </div>
             )
@@ -188,7 +188,7 @@ const SportsComplexDetails = () => {
                 kved: '',
                 iban: '',
                 edrpou: '',
-                service_group_id: '1'
+                service_group_name: '' // Змінено з service_group_id на service_group_name
             }
         }));
         document.body.style.overflow = 'hidden';
@@ -202,12 +202,12 @@ const SportsComplexDetails = () => {
         document.body.style.overflow = 'auto';
     };
     
-    // Функція для обробки відправки форми додавання
+    // Оновлена функція для обробки відправки форми додавання
     const handleAddFormSubmit = async () => {
-        const { kved, iban, edrpou, service_group_id } = addModalState.formData;
+        const { kved, iban, edrpou, service_group_name } = addModalState.formData;
         
         // Валідація форми
-        if (!kved || !iban || !edrpou) {
+        if (!kved || !iban || !edrpou || !service_group_name) {
             notification({
                 type: 'warning',
                 placement: 'top',
@@ -220,14 +220,25 @@ const SportsComplexDetails = () => {
         try {
             setAddModalState(prev => ({...prev, loading: true}));
             
-            // Відправка даних до серверу
+            // Спочатку створюємо нову групу послуг
+            const groupResponse = await fetchFunction('/api/sportscomplex/service-groups', {
+                method: 'post',
+                data: {
+                    name: service_group_name
+                }
+            });
+            
+            // Отримуємо id нової групи послуг
+            const serviceGroupId = groupResponse.data.id;
+            
+            // Створюємо реквізити з id нової групи послуг
             await fetchFunction('/api/sportscomplex/requisites', {
                 method: 'post',
                 data: {
                     kved,
                     iban,
                     edrpou,
-                    service_group_id: parseInt(service_group_id)
+                    service_group_id: serviceGroupId
                 }
             });
             
@@ -235,7 +246,7 @@ const SportsComplexDetails = () => {
                 type: 'success',
                 placement: 'top',
                 title: 'Успіх',
-                message: 'Реквізити успішно додано',
+                message: 'Нова група послуг та реквізити успішно створені',
             });
             
             // Оновлення даних в таблиці
@@ -269,7 +280,6 @@ const SportsComplexDetails = () => {
         }
     };
 
-    // Покращена обробка помилок як у PoolServices
     const handleGenerate = async () => {
         if (!state.itemId) return;
         
@@ -300,7 +310,6 @@ const SportsComplexDetails = () => {
             a.click();
             a.remove();
         } catch (error) {
-            // Покращена обробка помилок, взята з PoolServices
             if (error?.response?.status === 401) {
                 notification({
                     type: 'warning',
@@ -342,7 +351,6 @@ const SportsComplexDetails = () => {
                             }
                         </h2>
                         <div className="table-header__buttons">
-                            {/* Додано кнопку "Додати" */}
                             <Button 
                                 className="btn--primary"
                                 onClick={openAddModal}
@@ -436,7 +444,7 @@ const SportsComplexDetails = () => {
                 )}
             </Transition>
             
-            {/* Нове модальне вікно для додавання реквізитів */}
+            {/* Оновлене модальне вікно для додавання реквізитів */}
             <Transition in={addModalState.isOpen} timeout={200} unmountOnExit nodeRef={addFormRef}>
                 {transitionState => (
                     <Modal
@@ -490,16 +498,15 @@ const SportsComplexDetails = () => {
                             </FormItem>
                             
                             <FormItem 
-                                label="Група послуг" 
+                                label="Назва групи послуг" 
                                 required 
                                 fullWidth
                             >
                                 <Input
-                                    name="service_group_id"
-                                    type="number"
-                                    value={addModalState.formData.service_group_id}
+                                    name="service_group_name"
+                                    value={addModalState.formData.service_group_name}
                                     onChange={onAddFormChange}
-                                    placeholder="Введіть ID групи послуг"
+                                    placeholder="Введіть назву нової групи послуг"
                                 />
                             </FormItem>
                         </div>
