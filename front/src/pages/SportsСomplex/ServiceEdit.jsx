@@ -76,7 +76,7 @@ const ServiceEdit = () => {
                 message: 'Послугу успішно оновлено',
             });
             
-            navigate('/poolservices');
+            navigate('//sportscomplex/services');
         } catch (error) {
             if (error?.response?.status === 401) {
                 notification({

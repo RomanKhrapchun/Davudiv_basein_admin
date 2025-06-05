@@ -94,7 +94,7 @@ const RequisiteEdit = () => {
                 message: 'Реквізити успішно оновлено',
             });
             
-            navigate('/details');
+            navigate('/sportscomplex/details');
         } catch (error) {
             // Обробка помилок
         } finally {
