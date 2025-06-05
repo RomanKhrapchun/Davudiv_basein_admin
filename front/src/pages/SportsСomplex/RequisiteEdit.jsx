@@ -115,7 +115,7 @@ const RequisiteEdit = () => {
             {status === STATUS.SUCCESS && (
                 <div className="form-container">
                     <div className="btn-group" style={{ marginBottom: '20px' }}>
-                        <Button icon={onBackIcon} onClick={() => navigate('/details')}>
+                        <Button icon={onBackIcon} onClick={() => navigate('/sportscomplex/requisite')}>
                             Повернутись до реєстру
                         </Button>
                         <Button icon={onSaveIcon} onClick={handleSubmit} loading={loading}>

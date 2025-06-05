@@ -50,7 +50,7 @@ const RequisiteView = () => {
             {status === STATUS.SUCCESS ? (
                 <React.Fragment>
                     <div className="btn-group" style={{ marginBottom: '10px' }}>
-                        <Button icon={onBackIcon} onClick={() => navigate('/requisite')}>
+                        <Button icon={onBackIcon} onClick={() => navigate('/sportscomplex/requisite')}>
                             Повернутись до реєстру
                         </Button>
                     </div>

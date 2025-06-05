@@ -113,7 +113,7 @@ const ServiceEdit = () => {
             {status === STATUS.SUCCESS && (
                 <div className="form-container">
                     <div className="btn-group" style={{ marginBottom: '20px' }}>
-                        <Button icon={onBackIcon} onClick={() => navigate('/poolservices')}>
+                        <Button icon={onBackIcon} onClick={() => navigate('/sportscomplex/poolservices')}>
                             Повернутись до реєстру
                         </Button>
                         <Button icon={onSaveIcon} onClick={handleSubmit} loading={loading}>

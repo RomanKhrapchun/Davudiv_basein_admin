@@ -50,7 +50,7 @@ const ServiceView = () => {
             {status === STATUS.SUCCESS ? (
                 <React.Fragment>
                     <div className="btn-group" style={{ marginBottom: '10px' }}>
-                        <Button icon={onBackIcon} onClick={() => navigate('/poolservices')}>
+                        <Button icon={onBackIcon} onClick={() => navigate('/sportscomplex/poolservices')}>
                             Повернутись до реєстру
                         </Button>
                     </div>
